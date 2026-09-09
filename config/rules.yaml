@@ -1,0 +1,296 @@
+version: '1.5'
+effective_date: '2026-09-07'
+constants:
+  tax_rate: '0.03'
+  ratio_tolerance: '0.000001'
+  refund_reconciliation_tolerance: '0.01'
+  tail_auto_limit_exclusive: '1.00'
+  currency_code: CNY
+  currency_name: 人民币
+  book_code: 02@01
+  voucher_type_code: '0001'
+  voucher_type_name: 记
+  supplier_code: SC00020
+  supplier_name: 滴滴出行科技有限公司
+  non_rnd_project: 非研发
+  current_period_values:
+  - 本期
+accounts:
+  management_transport:
+    code: '6602.07'
+    name: 日常交通费
+  sales_transport:
+    code: '6601.07'
+    name: 日常交通费
+  rnd_transport:
+    code: 5301.01.07
+    name: 日常交通费
+  input_tax_pending:
+    code: '2221.04'
+    name: 待认证进项税额
+  accounts_payable:
+    code: '2202'
+    name: 应付账款
+departments:
+  CEO:
+    code: '001'
+    name: CEO
+    status: enabled
+  产品运营:
+    code: '002'
+    name: 产品运营
+    status: enabled
+  开发:
+    code: '003'
+    name: 开发
+    status: enabled
+  商务:
+    code: '004'
+    name: 商务
+    status: enabled
+  算法:
+    code: '005'
+    name: 算法
+    status: enabled
+  运营:
+    code: '006'
+    name: 运营
+    status: disabled
+  质检:
+    code: '007'
+    name: 质检
+    status: enabled
+  职能:
+    code: 008
+    name: 职能
+    status: enabled
+  研究员:
+    code: 009
+    name: 研究员
+    status: not_for_voucher
+  技术管理部:
+    code: '011'
+    name: 技术管理部
+    status: enabled
+  研发支持部:
+    code: '012'
+    name: 研发支持部
+    status: enabled
+projects:
+  Coding:
+    code: '00001'
+    name: Coding
+    status: enabled
+  Prediction:
+    code: '00002'
+    name: Prediction
+    status: enabled
+  AI4SCI:
+    code: '00003'
+    name: AI4SCI
+    status: enabled
+  Multimodel:
+    code: '00005'
+    name: Multimodel
+    status: enabled
+  Cowork:
+    code: '00006'
+    name: Cowork
+    status: enabled
+  Trading:
+    code: '00007'
+    name: Trading
+    status: enabled
+  Evaluation:
+    code: 00008
+    name: Evaluation
+    status: enabled
+    effective_from: 2026-06
+  非研发:
+    code: 00009
+    name: 非研发
+    status: enabled
+role_aliases:
+  管理: 职能
+  设计: 设计岗
+  设计岗: 设计岗
+employee_role_overrides: {}
+role_rules:
+  CEO:
+    rnd:
+      account: rnd_transport
+      department: 研发支持部
+    non_rnd:
+      account: management_transport
+      department: CEO
+      project: 非研发
+  产品运营:
+    rnd:
+      account: rnd_transport
+      department: 研发支持部
+    non_rnd:
+      account: management_transport
+      department: 产品运营
+      project: 非研发
+  设计岗:
+    rnd:
+      account: rnd_transport
+      department: 研发支持部
+    non_rnd:
+      account: management_transport
+      department: 产品运营
+      project: 非研发
+  商务:
+    rnd:
+      account: rnd_transport
+      department: 研发支持部
+    non_rnd:
+      account: sales_transport
+      department: 商务
+      project: 非研发
+  质检:
+    rnd:
+      account: rnd_transport
+      department: 研发支持部
+    non_rnd:
+      account: management_transport
+      department: 质检
+      project: 非研发
+  职能:
+    rnd:
+      account: rnd_transport
+      department: 研发支持部
+    non_rnd:
+      account: management_transport
+      department: 职能
+      project: 非研发
+  开发:
+    rnd:
+      account: rnd_transport
+      department: 开发
+    non_rnd:
+      account: management_transport
+      department: 技术管理部
+      project: 非研发
+  算法:
+    rnd:
+      account: rnd_transport
+      department: 算法
+    non_rnd:
+      account: management_transport
+      department: 技术管理部
+      project: 非研发
+  研究员:
+    rnd:
+      account: rnd_transport
+      department: 算法
+    non_rnd:
+      account: management_transport
+      department: 技术管理部
+      project: 非研发
+tail_rule:
+  account: management_transport
+  department: 职能
+  project: 非研发
+field_aliases:
+  personnel:
+    employee_name:
+    - 姓名
+    - 员工姓名
+    - 姓名.简体中文
+    - '*姓名.简体中文'
+    - 雇员姓名
+    employee_id:
+    - 员工编号
+    - 工号
+    - '*工号'
+    - 员工ID
+    department_code:
+    - 部门编码
+    - 部门.编码
+    - '*部门.编码'
+    department_name:
+    - 部门名称
+    - 部门.名称
+  allocation:
+    serial:
+    - 序号
+    employee_name:
+    - 姓名
+    - 员工姓名
+    - 雇员姓名
+    position:
+    - 岗位
+    - 职位
+    - 岗位类别
+    non_rnd_ratio:
+    - 非研发占比
+    - 非研发比例
+    Coding:
+    - Coding
+    - coding
+    Prediction:
+    - Prediction
+    - prediction
+    AI4SCI:
+    - AI4SCI
+    - ai4sci
+    Multimodel:
+    - Multimodel
+    - multimodel
+    Cowork:
+    - Cowork
+    - cowork
+    - CoWork
+    Trading:
+    - Trading
+    - trading
+    Evaluation:
+    - Evaluation
+    - evaluation
+    ignored_fields:
+    - 研发占比合计
+    - 占比合计
+    - 校验结果
+    - 备注
+  didi:
+    summary_sheet:
+    - 汇总数据
+    order_id:
+    - 企业订单号
+    - 订单号
+    billing_period:
+    - 所属账期
+    - 账期
+    settlement_period:
+    - 结算周期
+    - 账单周期
+    employee_name:
+    - 下单人姓名
+    - 员工姓名
+    - 乘车人姓名
+    employee_phone:
+    - 下单人电话
+    - 手机号
+    enterprise_paid:
+    - 企业实付金额
+    - 企业支付金额
+    refund_amount:
+    - 企业实退金额
+    - 企业退款金额
+    enterprise_payable:
+    - 企业应付金额
+    - 企业净应付金额
+    order_date:
+    - 支付时间
+    - 下单时间
+    - 用车时间
+    - 订单开始计费时间
+    - 计划用车时间
+    order_status:
+    - 订单状态
+    - 状态
+    cancel_time:
+    - 取消时间
+    refund_time:
+    - 退款时间
