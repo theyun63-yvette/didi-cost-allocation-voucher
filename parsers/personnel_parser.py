@@ -17,22 +17,29 @@ def parse_personnel(source: Any, config: dict) -> ParseResult:
 
     aliases = config["field_aliases"]["personnel"]
     candidates = []
+    department_or_role_aliases = [
+        *aliases.get("department_name", []),
+        *aliases.get("accounting_role", []),
+    ]
     for ws in wb.worksheets:
-        row = find_header_row(ws, [aliases["employee_name"], aliases["department_name"]])
+        row = find_header_row(ws, [aliases["employee_name"], department_or_role_aliases])
         if row:
             candidates.append((ws, row))
     if len(candidates) != 1:
-        return ParseResult(issues=[Issue("E001", "错误", True, filename, reason="无法唯一识别人员信息工作表", suggestion="确保只有一个工作表包含人员姓名和部门名称表头")], metadata={"sheet_names": wb.sheetnames})
+        return ParseResult(issues=[Issue("E001", "错误", True, filename, reason="无法唯一识别人员信息工作表", suggestion="确保只有一个工作表包含姓名，以及部门名称或岗位表头")], metadata={"sheet_names": wb.sheetnames})
 
     ws, header_row = candidates[0]
     headers = [ws.cell(header_row, col).value for col in range(1, ws.max_column + 1)]
     try:
         name_idx, _ = resolve_header(headers, aliases["employee_name"], "员工姓名")
-        dep_name_idx, _ = resolve_header(headers, aliases["department_name"], "部门名称")
+        dep_name_idx, _ = resolve_header(headers, aliases.get("department_name", []), "部门名称", False)
+        role_idx, _ = resolve_header(headers, aliases.get("accounting_role", []), "岗位/会计归属", False)
         id_idx, _ = resolve_header(headers, aliases.get("employee_id", []), "员工编号", False)
         dep_code_idx, _ = resolve_header(headers, aliases.get("department_code", []), "部门编码", False)
+        if dep_name_idx is None and role_idx is None:
+            raise KeyError("部门名称或岗位")
     except (KeyError, ValueError) as exc:
-        return ParseResult(issues=[Issue("E002", "错误", True, filename, ws.title, header_row, reason=f"人员信息表必要字段识别失败: {exc}", suggestion="补充唯一的姓名和部门名称字段")], metadata={"sheet": ws.title, "header_row": header_row})
+        return ParseResult(issues=[Issue("E002", "错误", True, filename, ws.title, header_row, reason=f"人员信息表必要字段识别失败: {exc}", suggestion="补充唯一的姓名，以及部门名称或岗位字段")], metadata={"sheet": ws.title, "header_row": header_row})
 
     role_aliases = config.get("role_aliases", {})
     records: list[PersonnelRecord] = []
@@ -41,17 +48,23 @@ def parse_personnel(source: Any, config: dict) -> ParseResult:
         if normalize_text(raw_name) == "":
             continue
         name = normalize_text(raw_name)
-        raw_dep_name = ws.cell(row, dep_name_idx + 1).value
+        raw_dep_name = ws.cell(row, dep_name_idx + 1).value if dep_name_idx is not None else None
+        raw_role = ws.cell(row, role_idx + 1).value if role_idx is not None else None
         dep_name = normalize_text(raw_dep_name)
-        accounting_role = normalize_role(dep_name, role_aliases)
+        role_text = normalize_text(raw_role)
+        accounting_role = normalize_role(role_text or dep_name, role_aliases)
+        if not dep_name:
+            dep_name = role_text
         employee_id = normalize_text(ws.cell(row, id_idx + 1).value) if id_idx is not None else ""
         dep_code = normalize_text(ws.cell(row, dep_code_idx + 1).value) if dep_code_idx is not None else ""
         records.append(PersonnelRecord(name, accounting_role, employee_id, dep_code, dep_name, ws.title, row))
         if str(raw_name) != name:
             issues.append(Issue("W001", "提示", False, filename, ws.title, row, employee_name=name, position=accounting_role, original_value=raw_name, reason="人员姓名空格已标准化", suggestion="无需处理；系统使用标准化姓名精确匹配"))
-        if raw_dep_name is not None and str(raw_dep_name) != dep_name:
+        if raw_dep_name is not None and str(raw_dep_name).strip() != normalize_text(raw_dep_name):
             issues.append(Issue("W001", "提示", False, filename, ws.title, row, employee_name=name, position=accounting_role, original_value=raw_dep_name, reason="人员部门名称空格已标准化", suggestion="无需处理；系统使用标准化部门归属"))
-        if dep_code == "006" or dep_name == "运营":
+        if raw_role is not None and str(raw_role).strip() != normalize_text(raw_role):
+            issues.append(Issue("W001", "提示", False, filename, ws.title, row, employee_name=name, position=accounting_role, original_value=raw_role, reason="人员岗位空格已标准化", suggestion="无需处理；系统使用标准化会计归属"))
+        if dep_code == "006" or dep_name == "运营" or accounting_role == "运营":
             issues.append(Issue("E010", "错误", True, filename, ws.title, row, employee_name=name, position=accounting_role, original_value=f"{dep_code} {dep_name}", reason="出现已停用部门运营006", suggestion="由业务人员映射为有效部门后重新上传"))
 
     by_name: dict[str, list[PersonnelRecord]] = defaultdict(list)

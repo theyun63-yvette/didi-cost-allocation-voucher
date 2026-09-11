@@ -212,6 +212,11 @@ field_aliases:
     department_name:
     - 部门名称
     - 部门.名称
+    accounting_role:
+    - 岗位
+    - 岗位类别
+    - 会计归属
+    - 会计归属类别
   allocation:
     serial:
     - 序号

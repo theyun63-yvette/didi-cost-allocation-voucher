@@ -162,3 +162,20 @@ def test_project_missing_before_effective_month_is_zero_with_log(config):
 def test_project_missing_from_effective_month_blocks(config):
     result = parse_allocation(allocation_book_without_evaluation(6), "2026-06", config)
     assert any(issue.code == "E002" and issue.blocking and issue.original_value == "Evaluation" for issue in result.issues)
+
+
+def test_personnel_with_name_and_position_only_is_supported(config):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Sheet1"
+    ws.append(["序号", "姓名", "岗位", "类型"])
+    ws.append([1, "张三", "开发", "研发"])
+    ws.append([2, "李四", "管理", "管理"])
+    result = parse_personnel(book_bytes(wb), config)
+    assert not [issue for issue in result.issues if issue.blocking]
+    assert len(result.records) == 2
+    records = {record.name: record for record in result.records}
+    assert records["张三"].position == "开发"
+    assert records["张三"].department_name == "开发"
+    assert records["李四"].position == "职能"
+    assert records["李四"].department_name == "管理"
